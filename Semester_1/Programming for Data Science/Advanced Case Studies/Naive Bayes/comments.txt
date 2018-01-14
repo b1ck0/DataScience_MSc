@@ -1,0 +1,66 @@
+1. wrong filenames used for reading the datasets 
+training_tweets_ap.txt -> training_tweets_app.txt
+training_tweets_oter.txt -> training_tweets_other.txt
+
+2. when I fixed the filenames I got an error when reading the file due to encoding issues ...
+I tried to get around this by writting the following
+app_tweets   = open("naive_bayes_data/training_tweets_app.txt", encoding='utf-8').read().splitlines()
+other_tweets = open("naive_bayes_data/training_tweets_other.txt", encoding='utf-8').read().splitlines()
+but now I get another error message
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0x8e in position 1881: invalid start byte
+I suspect that there is an issue with the text file itself
+Problem arises as the txt file is saved in ANSI encoding ... I have extracted the tweets from the original excel table and saved it into 
+utf-8, this applies for both files ...
+
+3. when preparing the bag of words I don't see any line which actually removes the duplicated words in each tweet (as stated in the text)
+we can run another loop in advance to remove the duplicates:
+
+another "bug" in the code is this line:
+other_bags_of_words = [tweet.split() for tweet in app_tweets_normalised] -> other_bags_of_words = [tweet.split() for tweet in other_tweets_normalised]
+
+4. when counting the tokens in each group the short words were not removed ... added a condition for the length of the word in both loops
+
+word_to_tweet_counts = {}
+for bag in app_bags_of_words:
+    for word in bag:
+        if len(word) > 3:
+            if word in word_to_tweet_counts:
+                (app_count, other_count) = word_to_tweet_counts[word]
+                app_count += 1
+                word_to_tweet_counts[word] = (app_count,other_count)
+            else:
+                word_to_tweet_counts[word] = (1,0) # we have only seen the word in an app tweet
+        else:
+            continue
+for bag in other_bags_of_words:
+    for word in bag:
+        if len(word) > 3:
+            if word in word_to_tweet_counts:
+                (app_count, other_count) = word_to_tweet_counts[word]
+                other_count += 1
+                word_to_tweet_counts[word] = (app_count,other_count)
+            else:
+                word_to_tweet_counts[word] = (0,1) # we have only seen the word in an other tweet
+        else:
+            continue
+
+5. the code doesn't do additive smoothing as recommended in the book ... insted its correct version avoids the number 0 ...
+I have implemented another solution, again without additive smoothing ...
+
+6. added a print statement to check the number of occurances of the word "mandrill" in both groups
+
+print(word_to_tweet_counts["mandrill"])
+
+7. these variables were assigned as integers
+num_apps = len(app_bags_of_words) -> num_apps = float(len(app_bags_of_words))
+num_others = len(other_bags_of_words) num_others = float(len(other_bags_of_words))
+
+8. this will result in very small probabilities, workaround is to use the log of the probabilities insted of them (according to the book)
+(app_prob,other_prob) = (app_count/num_apps, other_count/num_others) -> (app_prob,other_prob) = (app_count/num_apps, other_count/num_others)
+
+9. test_tweet_answers = open("naive_bayes_data/test_tweets_answers.text").read().splitlines() -> test_tweet_answers = open("naive_bayes_data/test_tweets_answers.txt").read().splitlines()
+
+10. I dont understand why in the beginnig ... it will not make a difference in the prediction
+total_app_prob, total_other_prob = 1, 1 -> total_app_prob, total_other_prob = 0, 0
+
+11. general probem is that there is no additive smoothing in the code ... I have fixed that
